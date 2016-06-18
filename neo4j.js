@@ -1,6 +1,9 @@
 
 var Neo4J = function (server,user,password) {
 
+    if(server && server.slice(0,5) != "http:")
+        server = "http://"+server+":7474";
+
     var baseUrl = server + "/db/data/";
 
     function settings(url,cb,eb) {
@@ -35,6 +38,7 @@ var Neo4J = function (server,user,password) {
     // Create the connector object
     var myConnector = tableau.makeConnector();
 
+    // FIXME:  move most of this into the Neo4J object, above.
     myConnector._runQuery = function (callback) {
         if(this._data) callback(this._data);
 
@@ -55,8 +59,12 @@ var Neo4J = function (server,user,password) {
             callback(data);
         }
 
+        var server = connectionData.server;
+        if(server.slice(0,5) != "http:")
+            server = "http://"+server+":7474";
+
         var settings = {
-            url: connectionData.server+"/db/data/transaction/commit",
+            url: server+"/db/data/transaction/commit",
             contentType: "application/json",
             data: data,
             username: tableau.username,
@@ -188,15 +196,21 @@ var Neo4J = function (server,user,password) {
         neo.getNodeLabels(showinfo, function () { console.log("Can't show info from server."); });
     }
 
+    function parseConnectionInfo()
+    {
+        var cd = {server:null, queries:[], labels:[]};
+        if(tableau.connectionData)
+            cd = JSON.parse(tableau.connectionData);
+        return cd;
+    }
+
 
     // This seems like a sneaky way of logging in
     myConnector.login = function () {
         console.log("login");
-        var user = $("#username").val().trim();
+        var user     = $("#username").val().trim();
         var password = $("#password").val().trim();
-
-        var connectionData = JSON.parse(tableau.connectionData);
-        var server = connectionData.server;
+        var server   = $("#serverurl").val().trim();
 
         var neo = Neo4J(server,user,password);
 
@@ -213,7 +227,9 @@ var Neo4J = function (server,user,password) {
 
         var user = tableau.username;
         var password = tableau.password;
-        var connectionData = JSON.parse(tableau.connectionData);
+        var connectionData = {server:null};
+        if(tableau.connectionData)
+            connectionData = JSON.parse(tableau.connectionData);
         var server = connectionData.server;
 
         $("#username").val(user);
