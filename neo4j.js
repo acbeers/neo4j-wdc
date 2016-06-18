@@ -40,9 +40,6 @@ var Neo4J = function (server,user,password) {
 
     // FIXME:  move most of this into the Neo4J object, above.
     myConnector._runQuery = function (callback) {
-        if(this._data) callback(this._data);
-
-        console.log("running query");
 
         var connectionData = JSON.parse(tableau.connectionData);
         var queries = connectionData.queries;
@@ -50,13 +47,23 @@ var Neo4J = function (server,user,password) {
         var statements = queries.map(function (x) { return {statement: x }});
         statements = statements.concat(labels.map(function (x) { return {statement: "match (node:"+x+") return node"} }));
         var data = JSON.stringify({statements: statements});
-        console.log(data);
+    
+        // Uhoh, the statements don't get eexecuted in order!!
+        var ids = [];
+        ids = ids.concat(queries.map(function (x,i) { return "Query " + (i+1)}));
+        ids = ids.concat(labels);
+
+        if(this._data) {
+            callback(this._data,ids);
+            return;
+        }
+        console.log("running query");
 
         var self = this;
         function doit(data)
         {
             this._data = data;
-            callback(data);
+            callback(data,ids);
         }
 
         var server = connectionData.server;
@@ -88,13 +95,10 @@ var Neo4J = function (server,user,password) {
         var rows = results.data;
         var isObj = false;
 
-        console.log(results);
-        console.log(rows[0].row[0]);
         if(typeof(rows[0].row[0]) == "object") {
             cols = Object.keys(rows[0].row[0]);  // Odd.  The row is an array of a single object?
             isObj = true;
         }
-        console.log(isObj);
 
         function row(i) {
             if(! isObj) {
@@ -109,6 +113,8 @@ var Neo4J = function (server,user,password) {
 
         function slice(a,b) {
             var res = [];
+            if(b > rows.length)
+                b=rows.length;
             for(var i=a ; i<b ; i++) {
                 res.push(row(i))
             }
@@ -127,35 +133,37 @@ var Neo4J = function (server,user,password) {
     myConnector.getSchema = function(schemaCallback) {
         console.log("getting schema");
 
-        this._runQuery(function(data) {
+        this._runQuery(function(data,ids) {
 
-            // FIXME: Assume that we are getting a single set of results.  I assume multiple sets of
-            //        results could be exposed as multiple tables.
-            var results = tableWrapper(data.results[0]);
+            var schemas = [];
+            for(var i=0 ; i<data.results.length ; i++)
+            {
+                var results = tableWrapper(data.results[i]);
 
-            // Go through each column, look at first N data values to determine types.
+                // Go through each column, look at first N data values to determine types.
 
-            var numRowsToTest = 10;
-            var cols = results.columns.map(function (x,i) {
-                console.log(x);
-                // Look at first N rows 
-                var vals = results.slice(0,10).map(function (row) { return row[i] });
+                var numRowsToTest = 10;
+                var cols = results.columns.map(function (x,i) {
+                    // Look at first N rows 
+                    var vals = results.slice(0,10).map(function (row) { return row[i] });
 
-                // Are these values numbers?
-                // FIXME: Need to add the case where we are returning a node, where each row is a dictionary.
-                var test = vals.map(function (x) { return parseFloat(x) === x });
-                var isNumber = test.reduce(function (x,y) { return x&&y },true);
-                var dt = isNumber ? tableau.dataTypeEnum.float : tableau.dataTypeEnum.string;
-                return {id: x, alias: x, dataType: dt };
-            });
+                    // Are these values numbers?
+                    // FIXME: Need to add the case where we are returning a node, where each row is a dictionary.
+                    var test = vals.map(function (x) { return parseFloat(x) === x });
+                    var isNumber = test.reduce(function (x,y) { return x&&y },true);
+                    var dt = isNumber ? tableau.dataTypeEnum.float : tableau.dataTypeEnum.string;
+                    return {id: x, alias: x, dataType: dt };
+                });
 
-            var tableInfo = {
-                id: "test",
-                alias: "test",
-                columns: cols
-            };
+                var tableInfo = {
+                    id: i,
+                    alias: ids[i],
+                    columns: cols
+                };
+                schemas.push(tableInfo);
+            }
 
-            schemaCallback([tableInfo]);            
+            schemaCallback(schemas);
         });
     };
 
@@ -169,7 +177,7 @@ var Neo4J = function (server,user,password) {
 
         this._runQuery(function (data) {
             var tableData = [];
-            var results = tableWrapper(data.results[0]);
+            var results = tableWrapper(data.results[table.tableInfo.id]);
             var columns = results.columns;
             for (var i = 0, len = results.length; i < len; i++) 
             {
@@ -207,7 +215,6 @@ var Neo4J = function (server,user,password) {
 
     // This seems like a sneaky way of logging in
     myConnector.login = function () {
-        console.log("login");
         var user     = $("#username").val().trim();
         var password = $("#password").val().trim();
         var server   = $("#serverurl").val().trim();
@@ -262,7 +269,6 @@ var Neo4J = function (server,user,password) {
         var password = $("#password").val().trim();
         var server = $("#serverurl").val().trim();
         var labels = $("input[name=labels]:checked").map(function () { return this.value }).get();
-        console.log(labels);
 
         tableau.username = username;
         tableau.password = password;
