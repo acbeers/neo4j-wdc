@@ -156,7 +156,7 @@ var Neo4J = function (server,user,password) {
                 });
 
                 var tableInfo = {
-                    id: i,
+                    id: i.toString(),
                     alias: ids[i],
                     columns: cols
                 };
