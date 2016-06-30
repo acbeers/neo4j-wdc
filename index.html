@@ -1,52 +1,73 @@
-<!doctype html>
 <html>
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <title>Neo4j-wdc by acbeers</title>
-    <link rel="stylesheet" href="stylesheets/styles.css">
-    <link rel="stylesheet" href="stylesheets/github-dark.css">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
-    <script src="javascripts/main.js"></script>
-    <!--[if lt IE 9]>
-      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 
-  </head>
-  <body>
-
-      <header>
-        <h1>Neo4j-wdc</h1>
-        <p></p>
-      </header>
-
-      <div id="banner">
-        <span id="logo"></span>
-
-        <a href="https://github.com/acbeers/neo4j-wdc" class="button fork"><strong>View On GitHub</strong></a>
-        <div class="downloads">
-          <span>Downloads:</span>
-          <ul>
-            <li><a href="https://github.com/acbeers/neo4j-wdc/zipball/master" class="button">ZIP</a></li>
-            <li><a href="https://github.com/acbeers/neo4j-wdc/tarball/master" class="button">TAR</a></li>
-          </ul>
-        </div>
-      </div><!-- end banner -->
-
-    <div class="wrapper">
-      <nav>
-        <ul></ul>
-      </nav>
-      <section>
-        <p>This is a page for the Neo4J Tableau connector.</p>
-      </section>
-      <footer>
-        <p>Project maintained by <a href="https://github.com/acbeers">acbeers</a></p>
-        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://twitter.com/michigangraham">mattgraham</a></small></p>
-      </footer>
-    </div>
-    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+<head>
+    <title>Neo4J</title>
+    <meta http-equiv="Cache-Control" content="no-store" />
     
-  </body>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js" type="text/javascript"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+    
+    <script src="https://connectors.tableau.com/libs/tableauwdc-2.0.0-beta.js" type="text/javascript"></script>
+    <script src="neo4j.js" type="text/javascript"></script>
+
+<style type="text/css">
+table { margin-left: 10px; }
+#loggedin {
+	text-align: right;
+	background: #ddf;
+	padding-top: 5px;
+	padding-bottom: 5px;
+	padding-right: 5px;
+	display: none;
+}
+#login { display: none; }
+#data  { display: none; } 
+
+#label_list_hdr { padding-right: 20px; }
+#label_list 	{ padding-right: 20px; vertical-align: top; }
+</style>
+
+</head>
+
+<body>
+
+<div id="login">
+<table>
+	<tr>
+		<td>Server URL:</td>
+		<td><input type="text" width="40" id="serverurl"/></td>
+	</tr>
+	<tr>
+		<td>Username:</td>
+		<td><input type="text" width="40" id="username"/></td>
+	</tr>
+	<tr>
+		<td>Password:</td>
+		<td><input type="password" width="40" id="password"/></td>
+	</tr>
+</table>
+<button type = "button" id = "loginButton" class = "btn btn-success" style = "margin: 10px;">Login</button>
+</div>
+
+<div id="loggedin">
+	<span>servername</span> : <span>neo4j</span>
+</div>
+
+<div id="data">
+<table>
+	<tr>
+		<th id="label_list_hdr">Node Labels</th>
+		<th>Query</th>
+	</tr>
+	<tr>
+		<td id="label_list"></td>
+		<td><textarea type="text" rows="6" cols="40" id="query"></textarea></td>
+	</tr>
+</table>
+<button type = "button" id = "submitButton" class = "btn btn-success" style = "margin: 10px;">Run Query</button>
+</div>
+
+
+</body>
 </html>
