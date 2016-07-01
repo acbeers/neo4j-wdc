@@ -188,6 +188,9 @@ var Neo4J = function (server,user,password) {
         });
     };
 
+    // Show the labels returned from the Server.
+    // This will also select those that are present in the connection information.
+    //
     function showinfo(data) {
         var cont = $("#label_list");
 
@@ -195,7 +198,18 @@ var Neo4J = function (server,user,password) {
             cont.append($('<div><input name="labels" type=checkbox id='+i+' value="'+elt+'">' + elt + "</div>"));
         });
         $("#data").show();
+
+        // Initiailize them
+        if(tableau.connectionData)
+            connectionData = JSON.parse(tableau.connectionData);
+        connectionData.labels.forEach(function (label) {
+            var e = $('input[value="'+label+'"]');
+            if(e) e.prop("checked",true);
+        });
+
     }
+
+    // Fetch information (node labels) from the Neo4J Server, calling showinfo() when done.
     function getinfo(neo) {
         $("#login").hide();
         $("#loggedin").show();
@@ -204,6 +218,7 @@ var Neo4J = function (server,user,password) {
         neo.getNodeLabels(showinfo, function () { console.log("Can't show info from server."); });
     }
 
+    // FIXME: This is currently unused, but should be how I get connection information.
     function parseConnectionInfo()
     {
         var cd = {server:null, queries:[], labels:[]};
@@ -221,6 +236,7 @@ var Neo4J = function (server,user,password) {
 
         var neo = Neo4J(server,user,password);
 
+        // FIXME:  Handle these errors properly - display some sort of message.
         function failure() {
             console.log("failed");
         }
@@ -250,6 +266,8 @@ var Neo4J = function (server,user,password) {
             $("#loggedin").show();
             $("#data").hide();
             getinfo(neo);
+
+            $("#query").val(connectionData.queries[0]);
         }
         function notConnected() {
             // Show the login UI.
