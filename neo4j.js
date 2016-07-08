@@ -1,4 +1,12 @@
 
+// Things to work on:
+// - break up into more testable pieces.  Hack time is over :)
+// - the "labels" thing is rough.  We could try to compose a query that explicitly gathers the property names, 
+//   then issues the right query.  Rather then asking for entire nodes, then re-parsing the JSON that comes back
+// - If I do the above, I could then issue EXPLAIN queries to get back column names, making getSchema much cheaper
+//   than it is today, and eliminating the need for caching between getSchema() and getData().  But, then
+//   I'd have to just return strings, since EXPLAIN just returns names, not data or types.
+
 var Neo4J = function (server,user,password) {
 
     if(server && server.slice(0,5) != "http:")
@@ -62,7 +70,7 @@ var Neo4J = function (server,user,password) {
         var self = this;
         function doit(data)
         {
-            this._data = data;
+            self._data = data;
             callback(data,ids);
         }
 
@@ -129,9 +137,17 @@ var Neo4J = function (server,user,password) {
         }
     };
 
+    // FIXME:  Note that this is brittle, as it could CAUSE name collisions
+    //         e.g. when h.name and h_name are both returned
+    //
+    myConnector.fixColumnName = function(cn) {
+        return cn.replace(".","_");
+    }
+
     // Define the schema
     myConnector.getSchema = function(schemaCallback) {
         console.log("getting schema");
+        var connector=this;
 
         this._runQuery(function(data,ids) {
 
@@ -152,7 +168,7 @@ var Neo4J = function (server,user,password) {
                     var test = vals.map(function (x) { return parseFloat(x) === x });
                     var isNumber = test.reduce(function (x,y) { return x&&y },true);
                     var dt = isNumber ? tableau.dataTypeEnum.float : tableau.dataTypeEnum.string;
-                    return {id: x, alias: x, dataType: dt };
+                    return {id: connector.fixColumnName(x), alias: x, dataType: dt };
                 });
 
                 var tableInfo = {
@@ -169,11 +185,7 @@ var Neo4J = function (server,user,password) {
 
     // Download the data
     myConnector.getData = function(table, doneCallback) {
-        var mag = 0,
-            title = "",
-            url = "",
-            lat = 0,
-            lon = 0;
+        var connector = this;
 
         this._runQuery(function (data) {
             var tableData = [];
@@ -181,7 +193,11 @@ var Neo4J = function (server,user,password) {
             var columns = results.columns;
             for (var i = 0, len = results.length; i < len; i++) 
             {
-                tableData.push(results.row(i));
+                var row = results.row(i);
+                var newrow = {};
+                columns.forEach(function (x) { newrow[connector.fixColumnName(x)] = row[x] })
+
+                tableData.push(newrow);
             }     
             table.appendRows(tableData);
             doneCallback();       
@@ -200,6 +216,8 @@ var Neo4J = function (server,user,password) {
         $("#data").show();
 
         // Initiailize them
+        // FIXME: This code is repeated below.
+        var connectionData = {server:null, labels:[]};
         if(tableau.connectionData)
             connectionData = JSON.parse(tableau.connectionData);
         connectionData.labels.forEach(function (label) {
