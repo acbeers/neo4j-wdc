@@ -225,6 +225,7 @@ var Neo4J = function (server,user,password) {
             if(e) e.prop("checked",true);
         });
 
+        $("#query").val(connectionData.queries[0]);
     }
 
     // Fetch information (node labels) from the Neo4J Server, calling showinfo() when done.
